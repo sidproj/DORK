@@ -18,6 +18,8 @@ class LLMService:
         )
 
         message = response.message
+        
+        print(message)
 
         return {
             "role": message.role,
