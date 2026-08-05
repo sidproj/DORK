@@ -1,7 +1,7 @@
 import type { ChatMessage } from "./chat";
 
 export interface ChatRequest {
-    messages: ChatMessage[];
+    message: string;
 }
 
 export interface ChatResponse {

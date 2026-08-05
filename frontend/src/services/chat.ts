@@ -1,13 +1,41 @@
-import api from "./api";
-import type { ChatRequest, ChatResponse } from "../types/api";
+import axios from "axios";
+import type { ChatMessage } from "../types/chat";
 
-export const sendMessage = async (
-    request: ChatRequest
-): Promise<ChatResponse> => {
-    const response = await api.post<ChatResponse>(
-        "/chat",
-        request
-    );
+const API_URL = "http://localhost:5000/api";
 
-    return response.data;
-};
+export interface ChatRequest {
+    conversation_id: number | null;
+    message: string;
+}
+
+export interface ChatResponse {
+    conversation_id: number;
+    message: ChatMessage;
+}
+
+export class ChatService {
+
+    static async getMessages(
+        conversationId: number
+    ): Promise<ChatMessage[]> {
+
+        const response = await axios.get(
+            `${API_URL}/conversations/${conversationId}/messages`
+        );
+
+        return response.data.data;
+    }
+
+    static async chat(
+        body: ChatRequest
+    ): Promise<ChatResponse> {
+
+        const response = await axios.post(
+            `${API_URL}/chat`,
+            body
+        );
+
+        return response.data.data;
+    }
+
+}

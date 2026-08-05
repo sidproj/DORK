@@ -7,6 +7,8 @@ interface Props {
 const ChatMessage = ({ message }: Props) => {
     const isUser = message.role === "user";
 
+    console.log({message});
+
     return (
         <div
             className={`flex mb-4 ${
