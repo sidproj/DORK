@@ -1,157 +1,120 @@
 import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
-    type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
 } from "react";
 import type { ChatMessage } from "../types/chat";
 import { useConversation } from "../hooks/useConversations";
 import { ChatService } from "../services/chat";
 
-
 interface ChatContextType {
-    messages: ChatMessage[];
-    loading: boolean;
-    error: string | null;
+  messages: ChatMessage[];
+  loading: boolean;
+  error: string | null;
 
-    refresh: () => Promise<void>;
-    chat: (content: string) => Promise<void>;
-    clear: () => void;
+  refresh: () => Promise<void>;
+  chat: (content: string) => Promise<void>;
+  clear: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
 interface Props {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 export function ChatProvider({ children }: Props) {
+  const { selectedConversation } = useConversation();
 
-    const { selectedConversation } = useConversation();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  /**
+   * Loads all messages for the selected conversation.
+   */
+  const refresh = useCallback(async () => {
+    if (!selectedConversation) {
+      setMessages([]);
+      return;
+    }
 
-    /**
-     * Loads all messages for the selected conversation.
-     */
-    const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-        if (!selectedConversation) {
-            setMessages([]);
-            return;
-        }
+    try {
+      const data = await ChatService.getMessages(selectedConversation.id);
 
-        setLoading(true);
-        setError(null);
+      setMessages(data);
+    } catch (err) {
+      console.error(err);
+      setError("Unable to load conversation.");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedConversation]);
 
-        try {
+  /**
+   * Sends a new message.
+   */
+  const chat = async (content: string) => {
+    if (!selectedConversation) return;
 
-            const data = await ChatService.getMessages(
-                selectedConversation.id
-            );
+    setLoading(true);
 
-            setMessages(data);
+    try {
+      const response = await ChatService.chat({
+        conversation_id: selectedConversation.id,
 
-        } catch (err) {
+        message: content,
+      });
 
-            console.error(err);
-            setError("Unable to load conversation.");
+      setMessages((prev) => [...prev, ...response.messages]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        } finally {
+  /**
+   * Clears the local message list.
+   */
+  const clear = () => {
+    setMessages([]);
+  };
 
-            setLoading(false);
+  /**
+   * Automatically load messages whenever
+   * the selected conversation changes.
+   */
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
-        }
-
-    }, [selectedConversation]);
-
-    /**
-     * Sends a new message.
-     */
-    const chat = async (content: string) => {
-
-        if (!selectedConversation)
-            return;
-
-        setLoading(true);
-        setError(null);
-
-        try {
-
-            await ChatService.chat({
-                conversation_id: selectedConversation.id,
-                message: content,
-            });
-
-            await refresh();
-
-        } catch (err) {
-
-            console.error(err);
-            setError("Unable to send message.");
-
-        } finally {
-
-            setLoading(false);
-
-        }
-
-    };
-
-    /**
-     * Clears the local message list.
-     */
-    const clear = () => {
-
-        setMessages([]);
-
-    };
-
-    /**
-     * Automatically load messages whenever
-     * the selected conversation changes.
-     */
-    useEffect(() => {
-
-        refresh();
-
-    }, [refresh]);
-
-    return (
-
-        <ChatContext.Provider
-            value={{
-                messages,
-                loading,
-                error,
-                refresh,
-                chat,
-                clear,
-            }}
-        >
-            {children}
-        </ChatContext.Provider>
-
-    );
-
+  return (
+    <ChatContext.Provider
+      value={{
+        messages,
+        loading,
+        error,
+        refresh,
+        chat,
+        clear,
+      }}
+    >
+      {children}
+    </ChatContext.Provider>
+  );
 }
 
 export function useChatContext() {
+  const context = useContext(ChatContext);
 
-    const context = useContext(ChatContext);
+  if (!context) {
+    throw new Error("useChatContext must be used inside ChatProvider");
+  }
 
-    if (!context) {
-
-        throw new Error(
-            "useChatContext must be used inside ChatProvider"
-        );
-
-    }
-
-    return context;
-
+  return context;
 }

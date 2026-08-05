@@ -1,8 +1,18 @@
+import { useEffect, useRef } from "react";
 import { useChat } from "../../hooks/userChat";
 import ChatMessage from "./ChatMessage";
 
 export default function ChatWindow() {
   const { messages, loading } = useChat();
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView();
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
 
   return (
     <div className="m-4 h-[85%] overflow-auto">
@@ -13,6 +23,8 @@ export default function ChatWindow() {
         loading &&
         <div>Loading...</div>
       }
+      {/* Invisible element used as a scroll target */}
+      <div ref={messagesEndRef} />  
     </div>
   );
 }

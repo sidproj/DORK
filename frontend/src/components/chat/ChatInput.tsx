@@ -35,7 +35,7 @@ export default function ChatInput() {
       <button
         onClick={handleSend}
         disabled={loading}
-        className="rounded bg-blue-600 px-4"
+        className={`rounded bg-blue-600 px-4 ${input.length > 0 && !loading ? "text-white" : "text-[#9CA3AF]"}`}
       >
         Send
       </button>

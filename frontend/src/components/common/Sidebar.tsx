@@ -1,8 +1,13 @@
 import { useConversation } from "../../hooks/useConversations";
 
 export default function Sidebar() {
-  const { conversations, selectedConversation, selectConversation, loading } =
-    useConversation();
+  const {
+    conversations,
+    selectedConversation,
+    selectConversation,
+    createConversation,
+    loading,
+  } = useConversation();
 
   if (loading) return <div className="w-[25%]">Loading...</div>;
 
@@ -16,6 +21,23 @@ export default function Sidebar() {
         </p>
       </header>
 
+      <button
+        onClick={createConversation}
+        className="
+                    m-3
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-lg
+                    border
+                    border-zinc-700
+                    p-3
+                    hover:bg-zinc-800
+                "
+      >
+        New Chat
+      </button>
       {conversations.map((conversation) => (
         <button
           key={conversation.id}

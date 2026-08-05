@@ -1,127 +1,102 @@
 import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
-    type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
 } from "react";
 import type { Conversation } from "../types/conversation";
 import { ConversationService } from "../services/conversation";
 
 interface ConversationContextType {
-    conversations: Conversation[];
+  conversations: Conversation[];
 
-    selectedConversation: Conversation | null;
+  selectedConversation: Conversation | null;
 
-    loading: boolean;
+  loading: boolean;
 
-    refresh: () => Promise<void>;
+  refresh: () => Promise<void>;
 
-    selectConversation: (conversation: Conversation | null) => void;
+  selectConversation: (conversation: Conversation | null) => void;
 
-    createConversation: () => Promise<void>;
+  createConversation: () => Promise<void>;
 }
 
-const ConversationContext =
-    createContext<ConversationContextType | null>(null);
+const ConversationContext = createContext<ConversationContextType | null>(null);
 
 interface Props {
-    children: ReactNode;
+  children: ReactNode;
 }
 
-export function ConversationProvider({
-    children,
-}: Props) {
+export function ConversationProvider({ children }: Props) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
-    const [conversations, setConversations] =
-        useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
 
-    const [selectedConversation, setSelectedConversation] =
-        useState<Conversation | null>(null);
+  const [loading, setLoading] = useState(false);
 
-    const [loading, setLoading] =
-        useState(false);
+  const refresh = useCallback(async () => {
+    setLoading(true);
 
-    const refresh = useCallback(async () => {
+    try {
+      const data = await ConversationService.getAll();
 
-        setLoading(true);
+      setConversations(data);
 
-        try {
+      if (!selectedConversation && data.length > 0) {
+        setSelectedConversation(data[0]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedConversation]);
 
-            const data =
-                await ConversationService.getAll();
+  const createConversation = async () => {
+    try {
+      const conversation = await ConversationService.create();
 
-            setConversations(data);
+      await refresh();
 
-            if (!selectedConversation && data.length > 0) {
+      selectConversation(conversation);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-                setSelectedConversation(data[0]);
+  const selectConversation = (conversation: Conversation | null) => {
+    setSelectedConversation(conversation);
+  };
 
-            }
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
-        } finally {
-
-            setLoading(false);
-
-        }
-
-    }, [selectedConversation]);
-
-    const createConversation = async () => {
-
-        // We'll implement this later.
-    };
-
-    const selectConversation = (
-        conversation: Conversation | null
-    ) => {
-
-        setSelectedConversation(conversation);
-
-    };
-
-    useEffect(() => {
-
-        refresh();
-
-    }, [refresh]);
-
-    return (
-
-        <ConversationContext.Provider
-            value={{
-                conversations,
-                selectedConversation,
-                loading,
-                refresh,
-                selectConversation,
-                createConversation,
-            }}
-        >
-
-            {children}
-
-        </ConversationContext.Provider>
-
-    );
-
+  return (
+    <ConversationContext.Provider
+      value={{
+        conversations,
+        selectedConversation,
+        loading,
+        refresh,
+        selectConversation,
+        createConversation,
+      }}
+    >
+      {children}
+    </ConversationContext.Provider>
+  );
 }
 
 export function useConversationContext() {
+  const context = useContext(ConversationContext);
 
-    const context = useContext(
-        ConversationContext
+  if (!context) {
+    throw new Error(
+      "useConversationContext must be used inside ConversationProvider",
     );
+  }
 
-    if (!context) {
-
-        throw new Error(
-            "useConversationContext must be used inside ConversationProvider"
-        );
-
-    }
-
-    return context;
-
+  return context;
 }
