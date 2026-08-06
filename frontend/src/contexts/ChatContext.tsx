@@ -27,7 +27,7 @@ interface Props {
 }
 
 export function ChatProvider({ children }: Props) {
-  const { selectedConversation } = useConversation();
+  const { selectedConversation,updateConversation } = useConversation();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,10 +68,9 @@ export function ChatProvider({ children }: Props) {
     try {
       const response = await ChatService.chat({
         conversation_id: selectedConversation.id,
-
         message: content,
       });
-
+      updateConversation(response.conversation) 
       setMessages((prev) => [...prev, ...response.messages]);
     } finally {
       setLoading(false);

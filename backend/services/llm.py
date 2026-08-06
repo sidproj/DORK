@@ -6,7 +6,6 @@ class LLMService:
 
     @staticmethod
     def chat(messages,think=True):
-        print(messages)
 
         response = ollama.chat(
             model=MODEL_NAME,
@@ -18,8 +17,6 @@ class LLMService:
         )
 
         message = response.message
-        
-        print(message)
 
         return {
             "role": message.role,

@@ -32,7 +32,7 @@ export default function Sidebar() {
                     rounded-lg
                     border
                     border-zinc-700
-                    p-3
+                    py-1 px-3
                     hover:bg-zinc-800
                 "
       >
@@ -41,7 +41,7 @@ export default function Sidebar() {
       {conversations.map((conversation) => (
         <button
           key={conversation.id}
-          className={`w-full text-left p-3 ${selectedConversation?.id === conversation.id ? "bg-gray-100" : "hover:bg-gray-100"}`}
+          className={`w-full text-left p-3 ${selectedConversation?.id === conversation.id ? "bg-gray-800" : "hover:bg-gray-600"}`}
           onClick={() => selectConversation(conversation)}
         >
           {conversation.title}

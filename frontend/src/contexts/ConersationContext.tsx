@@ -21,6 +21,8 @@ interface ConversationContextType {
   selectConversation: (conversation: Conversation | null) => void;
 
   createConversation: () => Promise<void>;
+
+  updateConversation: (conversation: Conversation) => void
 }
 
 const ConversationContext = createContext<ConversationContextType | null>(null);
@@ -65,6 +67,12 @@ export function ConversationProvider({ children }: Props) {
     }
   };
 
+  const updateConversation = (conversation: Conversation) => {
+    setConversations((prev) =>
+      prev.map((c) => (conversation.id === c.id ? conversation : c)),
+    );
+  };
+
   const selectConversation = (conversation: Conversation | null) => {
     setSelectedConversation(conversation);
   };
@@ -82,6 +90,7 @@ export function ConversationProvider({ children }: Props) {
         refresh,
         selectConversation,
         createConversation,
+        updateConversation
       }}
     >
       {children}

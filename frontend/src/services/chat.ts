@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { ChatMessage } from "../types/chat";
+import type { Conversation } from "../types/conversation";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -9,7 +10,7 @@ export interface ChatRequest {
 }
 
 export interface ChatResponse {
-  conversation_id: number;
+  conversation: Conversation;
   messages: ChatMessage[];
 }
 

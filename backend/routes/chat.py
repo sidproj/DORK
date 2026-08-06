@@ -30,7 +30,12 @@ def chat():
         return jsonify({
             "success": True,
             "data": {
-                "conversation_id": result["conversation_id"],
+                "conversation": {
+                    "id":result["conversation"].id,
+                    "title":result["conversation"].title,
+                    "created_at":result["conversation"].created_at,
+                    "updated_at":result["conversation"].updated_at
+                },
                 "messages": [
 
                     {

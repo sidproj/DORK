@@ -57,7 +57,6 @@ class ConversationRepository:
             SELECT *
             FROM conversations
             WHERE id = ?
-            ORDER BY UPDATED AT DESC
             """,
             (conversation_id,)
         )
@@ -92,3 +91,22 @@ class ConversationRepository:
             Conversation(**dict(row))
             for row in rows
         ]
+    
+    def update_title(conversation_id:int,title:str):
+        conn = Database.get_connection()
+        
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            UPDATE conversations
+            SET title = ?
+            WHERE id = ?
+            """,
+            (title,conversation_id)
+        )
+        conn.commit()
+        
+        conn.close()
+        
+        return 
