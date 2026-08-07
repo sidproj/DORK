@@ -4,14 +4,14 @@ import { useChat } from "../../hooks/userChat";
 export default function ChatInput() {
   const [input, setInput] = useState("");
 
-  const { chat, loading } = useChat();
+  const { chat, loading,streamChat } = useChat();
 
   const handleSend = async () => {
     const text = input.trim();
 
     if (!text) return;
 
-    await chat(text);
+    await streamChat(text);
 
     setInput("");
   };

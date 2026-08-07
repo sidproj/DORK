@@ -17,6 +17,7 @@ interface ChatContextType {
 
   refresh: () => Promise<void>;
   chat: (content: string) => Promise<void>;
+  streamChat(message: string): Promise<void>;
   clear: () => void;
 }
 
@@ -27,7 +28,7 @@ interface Props {
 }
 
 export function ChatProvider({ children }: Props) {
-  const { selectedConversation,updateConversation } = useConversation();
+  const { selectedConversation, updateConversation } = useConversation();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,8 +71,71 @@ export function ChatProvider({ children }: Props) {
         conversation_id: selectedConversation.id,
         message: content,
       });
-      updateConversation(response.conversation) 
+      updateConversation(response.conversation);
       setMessages((prev) => [...prev, ...response.messages]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const streamChat = async (message: string) => {
+    if (!selectedConversation) {
+      throw new Error("No conversation selected.");
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1. Append the user's message immediately
+      const userMessage: ChatMessage = {
+        id: "-1", // Temporary ID
+        role: "user",
+        content: message,
+      };
+
+      // 2. Append an empty assistant placeholder
+      const assistantMessage: ChatMessage = {
+        id: "-2", // Temporary ID
+        role: "assistant",
+        content: "",
+      };
+
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+
+      // 3. Start streaming
+      for await (const event of ChatService.streamChat({
+        conversation_id: selectedConversation.id,
+        message,
+      })) {
+        switch (event.type) {
+          case "token":
+            setMessages((prev) => {
+              const copy = [...prev];
+
+              copy[copy.length - 1] = {
+                ...copy[copy.length - 1],
+                content: copy[copy.length - 1].content + event.content,
+              };
+
+              return copy;
+            });
+            break;
+
+          case "done":
+            console.log("Streaming complete", event);
+            break;
+
+          case "error":
+            throw new Error(event.error);
+
+          default:
+            console.warn("Unknown stream event:", event);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to send message.");
     } finally {
       setLoading(false);
     }
@@ -100,6 +164,7 @@ export function ChatProvider({ children }: Props) {
         error,
         refresh,
         chat,
+        streamChat,
         clear,
       }}
     >

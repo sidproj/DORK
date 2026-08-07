@@ -12,7 +12,7 @@ export default function Sidebar() {
   if (loading) return <div className="w-[25%]">Loading...</div>;
 
   return (
-    <div className="w-[25%] border-r">
+    <div className="w-[25%] border-r h-full overflow-auto">
       <header className="border-b border-gray-700 p-2">
         <h1 className="text-2xl font-bold">DORK</h1>
 
