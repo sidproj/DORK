@@ -10,6 +10,7 @@ class MessageRepository:
         conversation_id: int,
         role: str,
         content: str,
+        tool_calls = None,
     ):
 
         conn = Database.get_connection()
@@ -21,14 +22,16 @@ class MessageRepository:
             INSERT INTO messages(
                 conversation_id,
                 role,
-                content
+                content,
+                tool_calls
             )
-            VALUES (?, ?, ?)
+            VALUES (?, ?, ?,?)
             """,
             (
                 conversation_id,
                 role,
                 content,
+                tool_calls
             ),
         )
         conn.commit()
@@ -79,6 +82,7 @@ class MessageRepository:
             SELECT *
             FROM messages
             WHERE conversation_id = ?
+            AND ROLE in ('user','assistant')
             ORDER BY id
             """,
             (conversation_id,)

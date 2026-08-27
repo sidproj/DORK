@@ -16,6 +16,7 @@ SCHEMA = [
         conversation_id INTEGER NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
+        tool_calls TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
         FOREIGN KEY (conversation_id)
@@ -44,6 +45,7 @@ def initialize_database():
         conversation_id INTEGER NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
+        tool_calls TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
         FOREIGN KEY(conversation_id)

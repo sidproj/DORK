@@ -8,6 +8,7 @@ class Message:
     conversation_id: int
     role: str
     content: str
+    tool_calls:str
     created_at: datetime | None = None
     
     def to_dict(self):

@@ -1,5 +1,6 @@
 from prompts.identity import IDENTITY
 from prompts.rules import RULES
+from prompts.tools import TOOL_RULES
 from prompts.runtime import runtime
 
 class PromptManager:
@@ -17,6 +18,11 @@ class PromptManager:
         prompt.append({
             "role":"system",
             "content":RULES
+        })
+        
+        prompt.append({
+            "role":"system",
+            "content":TOOL_RULES
         })
 
         prompt.append({
