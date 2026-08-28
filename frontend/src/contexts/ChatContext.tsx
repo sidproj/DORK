@@ -30,31 +30,52 @@ interface Props {
 export function ChatProvider({ children }: Props) {
   const { selectedConversation, updateConversation } = useConversation();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [messagesByConversation, setMessagesByConversation] = useState<
+    Record<number, ChatMessage[]>
+  >({});
+
+  const [loadingByConversation, setLoadingByConversation] = useState<
+    Record<number, boolean>
+  >({});
+
   const [error, setError] = useState<string | null>(null);
+
+  /*
+   * Messages visible in the UI.
+   *
+   * This is derived from selectedConversation.
+   * It is NOT a separate state variable.
+   */
+  const messages = selectedConversation
+    ? (messagesByConversation[selectedConversation.id] ?? [])
+    : [];
+
+  const loading = selectedConversation
+    ? (loadingByConversation[selectedConversation.id] ?? false)
+    : false;
 
   /**
    * Loads all messages for the selected conversation.
    */
   const refresh = useCallback(async () => {
     if (!selectedConversation) {
-      setMessages([]);
       return;
     }
 
-    setLoading(true);
+    const conversationId = selectedConversation.id;
+
     setError(null);
 
     try {
-      const data = await ChatService.getMessages(selectedConversation.id);
+      const data = await ChatService.getMessages(conversationId);
 
-      setMessages(data);
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [conversationId]: data,
+      }));
     } catch (err) {
       console.error(err);
       setError("Unable to load conversation.");
-    } finally {
-      setLoading(false);
     }
   }, [selectedConversation]);
 
@@ -64,17 +85,38 @@ export function ChatProvider({ children }: Props) {
   const chat = async (content: string) => {
     if (!selectedConversation) return;
 
-    setLoading(true);
+    const conversationId = selectedConversation.id;
+
+    setLoadingByConversation((prev) => ({
+      ...prev,
+      [conversationId]: true,
+    }));
+
+    setError(null);
 
     try {
       const response = await ChatService.chat({
-        conversation_id: selectedConversation.id,
+        conversation_id: conversationId,
         message: content,
       });
+
       updateConversation(response.conversation);
-      setMessages((prev) => [...prev, ...response.messages]);
+
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [conversationId]: [
+          ...(prev[conversationId] ?? []),
+          ...response.messages,
+        ],
+      }));
+    } catch (err) {
+      console.error(err);
+      setError("Failed to send message.");
     } finally {
-      setLoading(false);
+      setLoadingByConversation((prev) => ({
+        ...prev,
+        [conversationId]: false,
+      }));
     }
   };
 
@@ -83,47 +125,110 @@ export function ChatProvider({ children }: Props) {
       throw new Error("No conversation selected.");
     }
 
-    setLoading(true);
+    /*
+     * Capture this immediately.
+     *
+     * DO NOT use selectedConversation.id inside the
+     * streaming loop later.
+     */
+    const conversationId = selectedConversation.id;
+
+    setLoadingByConversation((prev) => ({
+      ...prev,
+      [conversationId]: true,
+    }));
+
     setError(null);
 
     try {
-      // 1. Append the user's message immediately
+      /*
+       * Temporary user message.
+       */
       const userMessage: ChatMessage = {
-        id: "-1", // Temporary ID
+        id: `temp-user-${Date.now()}`,
         role: "user",
         content: message,
       };
 
-      // 2. Append an empty assistant placeholder
+      /*
+       * Temporary assistant message.
+       */
       const assistantMessage: ChatMessage = {
-        id: "-2", // Temporary ID
+        id: `temp-assistant-${Date.now()}`,
         role: "assistant",
         content: "",
       };
 
-      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      /*
+       * Add both messages ONLY to this conversation.
+       */
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [conversationId]: [
+          ...(prev[conversationId] ?? []),
+          userMessage,
+          assistantMessage,
+        ],
+      }));
 
-      // 3. Start streaming
+      /*
+       * Start streaming.
+       *
+       * The request is now associated with conversationId,
+       * not with the currently selected conversation.
+       */
       for await (const event of ChatService.streamChat({
-        conversation_id: selectedConversation.id,
+        conversation_id: conversationId,
         message,
       })) {
         switch (event.type) {
           case "token":
-            setMessages((prev) => {
-              const copy = [...prev];
+            setMessagesByConversation((prev) => {
+              const conversationMessages = prev[conversationId] ?? [];
 
-              copy[copy.length - 1] = {
-                ...copy[copy.length - 1],
-                content: copy[copy.length - 1].content + event.content,
+              if (conversationMessages.length === 0) {
+                return prev;
+              }
+
+              const updatedMessages = [...conversationMessages];
+
+              const lastIndex = updatedMessages.length - 1;
+
+              const lastMessage = updatedMessages[lastIndex];
+
+              updatedMessages[lastIndex] = {
+                ...lastMessage,
+                content: lastMessage.content + event.content,
               };
 
-              return copy;
+              return {
+                ...prev,
+                [conversationId]: updatedMessages,
+              };
             });
+
+            break;
+
+          case "title":
+            /*
+             * Handle this when your backend starts emitting
+             * title events.
+             */
+
+            if (event.conversation) {
+              updateConversation(event.conversation);
+            }
+
             break;
 
           case "done":
+            /*
+             * Eventually use the persisted assistant message
+             * returned by the backend to replace the temporary
+             * assistant message.
+             */
             console.log("Streaming complete", event);
+
             break;
 
           case "error":
@@ -135,9 +240,23 @@ export function ChatProvider({ children }: Props) {
       }
     } catch (err) {
       console.error(err);
+
+      /*
+       * Don't allow an error in conversation A to affect
+       * another conversation.
+       */
       setError("Failed to send message.");
     } finally {
-      setLoading(false);
+      /*
+       * IMPORTANT:
+       *
+       * Stop loading ONLY for the conversation that
+       * started this request.
+       */
+      setLoadingByConversation((prev) => ({
+        ...prev,
+        [conversationId]: false,
+      }));
     }
   };
 
@@ -145,7 +264,16 @@ export function ChatProvider({ children }: Props) {
    * Clears the local message list.
    */
   const clear = () => {
-    setMessages([]);
+    if (!selectedConversation) {
+      return;
+    }
+
+    const conversationId = selectedConversation.id;
+
+    setMessagesByConversation((prev) => ({
+      ...prev,
+      [conversationId]: [],
+    }));
   };
 
   /**

@@ -9,44 +9,122 @@ export default function Sidebar() {
     loading,
   } = useConversation();
 
-  if (loading) return <div className="w-[25%]">Loading...</div>;
+  if (loading) {
+    return (
+      <aside className="flex h-full w-[25%] items-center justify-center border-r border-(--border) bg-(--surface-muted)">
+        <span className="text-sm text-(--text-muted)">Loading...</span>
+      </aside>
+    );
+  }
 
   return (
-    <div className="w-[25%] border-r h-full overflow-auto">
-      <header className="border-b border-gray-700 p-2">
-        <h1 className="text-2xl font-bold">DORK</h1>
-
-        <p className="text-sm text-gray-400">
+    <aside className="flex h-full w-[25%] min-w-60 flex-col border-r border-(--border) bg-(--surface-muted)">
+      {/* Header */}
+      <header className="border-b border-(--border) px-5 py-5 text-left">
+        <h1 className="font-mono text-2xl font-semibold tracking-tight text-(--text)">
+          DORK
+        </h1>
+        <p className="mt-1 text-xs leading-relaxed text-(--text-muted)">
           Data Organizer & Resource Knowledge
         </p>
       </header>
-
-      <button
-        onClick={createConversation}
-        className="
-                    m-3
-                    flex
-                    items-center
-                    justify-center
-                    gap-2
-                    rounded-lg
-                    border
-                    border-zinc-700
-                    py-1 px-3
-                    hover:bg-zinc-800
-                "
-      >
-        New Chat
-      </button>
-      {conversations.map((conversation) => (
+      {/* New Chat */}
+      <div className="border-b border-(--border) p-3">
         <button
-          key={conversation.id}
-          className={`w-full text-left p-3 ${selectedConversation?.id === conversation.id ? "bg-gray-800" : "hover:bg-gray-600"}`}
-          onClick={() => selectConversation(conversation)}
+          onClick={createConversation}
+          className="
+        flex
+        w-full
+        items-center
+        justify-center
+        gap-2
+        rounded-md
+        border
+        border-(--border-strong)
+        bg-(--surface)
+        px-3
+        py-2
+        text-sm
+        font-medium
+        text-(--text)
+        transition-colors
+        duration-150
+        hover:border-(--blue)
+        hover:bg-(--blue-muted)
+        focus:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-(--blue)
+        focus-visible:ring-offset-2
+        focus-visible:ring-offset-(--surface-muted)
+      "
         >
-          {conversation.title}
+          <span className="text-base leading-none">+</span>
+          New Chat
         </button>
-      ))}
-    </div>
+      </div>
+      {/* Conversation list */}
+      <div className="flex-1 overflow-y-auto px-2 py-3">
+        <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-faint)">
+          Conversations
+        </p>
+
+        <div className="space-y-1">
+          {conversations.map((conversation) => {
+            const isSelected = selectedConversation?.id === conversation.id;
+
+            return (
+              <button
+                key={conversation.id}
+                onClick={() => selectConversation(conversation)}
+                className={`
+              group
+              w-full
+              rounded-md
+              px-3
+              py-2.5
+              text-left
+              text-sm
+              transition-colors
+              duration-150
+              ${
+                isSelected
+                  ? `
+                    border
+                    border-(--border)
+                    bg-(--surface)
+                    text-(--text)
+                    shadow-(--shadow-sm)
+                  `
+                  : `
+                    border
+                    border-transparent
+                    text-(--text-muted)
+                    hover:bg-(--surface)
+                    hover:text-(--text)
+                  `
+              }
+            `}
+              >
+                <span className="block truncate">{conversation.title}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {conversations.length === 0 && (
+          <div className="px-3 py-8 text-center">
+            <p className="text-sm text-(--text-faint)">No conversations yet.</p>
+          </div>
+        )}
+      </div>
+      {/* Footer */}
+      <footer className="border-t border-(--border) px-4 py-3">
+        <div className="flex items-center gap-2 text-xs text-(--text-faint)">
+          <span className="h-2 w-2 rounded-full bg-(--green)" />
+
+          <span>DORK Local</span>
+        </div>
+      </footer>
+    </aside>
   );
 }

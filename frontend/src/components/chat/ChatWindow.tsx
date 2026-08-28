@@ -15,7 +15,7 @@ export default function ChatWindow() {
   }, [messages, loading]);
 
   return (
-    <div className="m-4 h-[85%] overflow-auto">
+    <div className="m-4 h-[84%] overflow-auto">
       {messages.map((message) => (
         <ChatMessage key={message.id} message={message}/>
       ))}

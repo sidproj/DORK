@@ -1,31 +1,19 @@
 import type { ChatMessage as ChatMessageType } from "../../types/chat";
 
+import UserChatMessage from "./UserChatMessage";
+import DorkChatMessage from "./DorkChatMessage";
+
 interface Props {
-    message: ChatMessageType;
+  message: ChatMessageType;
 }
 
 const ChatMessage = ({ message }: Props) => {
-    const isUser = message.role === "user";
-
-    console.log({message});
-
-    return (
-        <div
-            className={`flex mb-4 ${
-                isUser ? "justify-end" : "justify-start"
-            }`}
-        >
-            <div
-                className={`max-w-[75%] rounded-xl px-4 py-3 whitespace-pre-wrap text-left ${
-                    isUser
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-white"
-                }`}
-            >
-                {message.content}
-            </div>
-        </div>
-    );
+  switch (message.role) {
+    case "user":
+      return <UserChatMessage message={message} />;
+    default:
+      return <DorkChatMessage message={message} />;
+  }
 };
 
 export default ChatMessage;

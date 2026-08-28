@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
 import type { Conversation } from "../types/conversation";
 import { ConversationService } from "../services/conversation";
 
@@ -22,7 +23,7 @@ interface ConversationContextType {
 
   createConversation: () => Promise<void>;
 
-  updateConversation: (conversation: Conversation) => void
+  updateConversation: (conversation: Conversation) => void;
 }
 
 const ConversationContext = createContext<ConversationContextType | null>(null);
@@ -37,39 +38,64 @@ export function ConversationProvider({ children }: Props) {
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
 
-  const [loading, setLoading] = useState(false);
+  // Only represents the initial conversation fetch.
+  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-
     try {
       const data = await ConversationService.getAll();
 
       setConversations(data);
 
-      if (!selectedConversation && data.length > 0) {
-        setSelectedConversation(data[0]);
-      }
+      setSelectedConversation((current) => {
+        // Keep the currently selected conversation.
+        if (current) {
+          const updatedConversation = data.find(
+            (conversation) => conversation.id === current.id,
+          );
+
+          return updatedConversation ?? current;
+        }
+
+        // Select the first conversation only if
+        // nothing is currently selected.
+        if (data.length > 0) {
+          return data[0];
+        }
+
+        return null;
+      });
     } finally {
+      // Loading only matters during the initial fetch.
       setLoading(false);
     }
-  }, [selectedConversation]);
+  }, []);
 
   const createConversation = async () => {
     try {
       const conversation = await ConversationService.create();
 
-      await refresh();
+      /*
+       * Add the new conversation directly instead
+       * of refetching the entire conversation list.
+       */
+      setConversations((previous) => [conversation, ...previous]);
 
-      selectConversation(conversation);
-    } catch (e) {
-      console.error(e);
+      setSelectedConversation(conversation);
+    } catch (error) {
+      console.error(error);
     }
   };
 
   const updateConversation = (conversation: Conversation) => {
-    setConversations((prev) =>
-      prev.map((c) => (conversation.id === c.id ? conversation : c)),
+    setConversations((previous) =>
+      previous.map((current) =>
+        current.id === conversation.id ? conversation : current,
+      ),
+    );
+
+    setSelectedConversation((current) =>
+      current?.id === conversation.id ? conversation : current,
     );
   };
 
@@ -90,7 +116,7 @@ export function ConversationProvider({ children }: Props) {
         refresh,
         selectConversation,
         createConversation,
-        updateConversation
+        updateConversation,
       }}
     >
       {children}
